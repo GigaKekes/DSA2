@@ -1,28 +1,48 @@
-#include <stdio.h>
+#include <iostream>
+#include <chrono>
+#include <thread>
 
-int memsize = 512;
-volatile int global_var = 0;
+const size_t MEMORY_SIZE = 2ULL * 1024ULL * 1024ULL * 1024ULL;
+const size_t PAGE_SIZE = 4 * 1024; 
+
+volatile char *memory = nullptr;
 
 
-void dangerous_read(int *ptr)
+void read(size_t delayPages)
 {
-    global_var = *ptr;
-}
+    for (size_t i = 0; i < MEMORY_SIZE / PAGE_SIZE; ++i)
+    {
+        volatile char value = memory[i * PAGE_SIZE];
+        if (i % delayPages == 0)
+        {
+            std::cout << "memory[" << i * PAGE_SIZE << "] value: " << static_cast<int>(value) << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
 
-void dangerous_write(int *ptr, int value)
-{
-    global_var = *ptr;
-    *ptr = value;
-}
-
-int main() 
-{
-    int arr[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-
-    for (int i = 0; i < 1024*1024*1024; i++) {
-        dangerous_read(arr + i);
-        printf("arr[%d] = %d\n", i, global_var);
     }
+}
+
+void write(size_t delayPages)
+{
+    for (size_t i = 0; i < MEMORY_SIZE / PAGE_SIZE; ++i)
+    {
+        if (i % delayPages == 0)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
+        memory[i * PAGE_SIZE] = '\0';
+    }
+}
+
+int main()
+{
+
+    memory = new (std::nothrow) volatile char[MEMORY_SIZE];
+
+    read(2048);
+
+    delete[] memory;
 
     return 0;
 }
