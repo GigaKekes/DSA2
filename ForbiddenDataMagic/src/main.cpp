@@ -1,6 +1,8 @@
 #include <stdio.h>
 
+int memsize = 512;
 volatile int global_var = 0;
+
 
 void dangerous_read(int *ptr)
 {
