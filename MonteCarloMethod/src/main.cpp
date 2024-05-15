@@ -7,13 +7,14 @@
 #include <random>
 #include <math.h>
 
-std::mutex mtx;
 long long num_threads;
 long long num_points;
+std::mutex mtx_num_points; // Guards num_points
 long long in_circle = 0;
 
 void Simulate(long long thread_id, long long points_per_thread)
 {
+    long long in_circle_loc = 0;
     std::default_random_engine generator;
     std::uniform_real_distribution<float> distribution(0.0, 1.0);
     for (long long i = 0; i < points_per_thread; i++)
@@ -22,11 +23,12 @@ void Simulate(long long thread_id, long long points_per_thread)
         float y = distribution(generator);
         if (x * x + y * y <= 1.0)
         {
-            mtx.lock();
-            in_circle++;
-            mtx.unlock();
+            in_circle_loc++;
         }
     }
+    mtx_num_points.lock();
+    in_circle += in_circle_loc;
+    mtx_num_points.unlock();
 }
 
 inline double eval_prob(double epsilon) 
